@@ -11,7 +11,23 @@ aws s3 cp sample.csv s3://ms-awslambda-lab0
 
 ##### Version 1
 Next I created a lambda function (python 3) using the console called `awslambda-lab1`.
-Leaving the sample generated code alone - I wrote the `csv_read.py` file here and zipped it up:
+Leaving the sample generated code alone - I wrote the `csv_read.py` file:
+```
+import boto3
+
+s3 = boto3.resource('s3')
+
+
+def lambda_handler(event, context):
+    src_bucket = event['Records'][0]['s3']['bucket']['name']
+    src_key = event['Records'][0]['s3']['object']['key']
+
+    obj = s3.Object(src_bucket, src_key)
+    contents = obj.get()['Body'].read().decode('utf-8')
+    print("Raw CSV: {}".format(contents))
+    return contents
+```
+ and zipped it up:
 ```
 zip -r csv_parse.zip *.py
 ```
@@ -33,7 +49,7 @@ To make sure my lambda function is being triggered correctly, I copied the file 
 
 Currently the only version or qualifier I have is $LATEST - nothing is publihsed yet. I create version 1.
 ```
-aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name awslambda-lab1
+aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name awslambda-lab1 --publish
 ```
 and in the console I can see the new version and create an alias "PROD" which points to it.
 
@@ -46,6 +62,10 @@ Next step is to update the lambda so it outputs the Net revenue totals for the d
 |2016-05-26|       90| 9240|    3947|
 |2016-05-27|       20|  200|     250|
 
+So for each csv file I'd like to sum up the 'gross' - 'expenses' value from each line. I'm not going to bother checking that those columns exist. I also want to add some output to make looking at the cloudwatch logs nicer.
+
+The course uses a whole new file and function-handler for the new version, but I'm just going to update csv_read to
+
 ```
 import boto3
 import csv
@@ -56,10 +76,19 @@ def lambda_handler(event, context):
     src_bucket = event['Records'][0]['s3']['bucket']['name']
     src_key = event['Records'][0]['s3']['object']['key']
 
+    print("Triggered by file: {}".format(src_key))
     obj = s3.Object(src_bucket, src_key)
     contents = obj.get()['Body'].read().decode('utf-8')
 
+
+    total_net = 0
     for row in csv.DictReader(contents.split()):
         print(row)
-    return "Got {0}: {1}".format(src_bucket, src_key)
+        total_net += (row["Gross"] - row["Expenses"])
+    return "Total Net: ${0}".format(total_net)
+```
+and rezip and publish the file.
+```
+$ zip -r csv_parse.zip *.py
+$ aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name awslambda-lab1 --publish
 ```

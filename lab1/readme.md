@@ -38,11 +38,13 @@ aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name
 and in the console I can see the new version and create an alias "PROD" which points to it.
 
 ##### Version 2
-Next step is to update the lambda so it outputs the Net revenue totals for the day. The csv looks like:
-|Day|Customers|Gross|Expenses|
-|2016-05-25|45|500|273|
-|2016-05-26|90|9240|3947|
-|2016-05-27|20|200|250|
+Next step is to update the lambda so it outputs the Net revenue totals for the day. The csv looks like:  
+
+|Day       |Customers|Gross|Expenses|
+|----------|---------|-----|--------|
+|2016-05-25|       45|  500|     273|
+|2016-05-26|       90| 9240|    3947|
+|2016-05-27|       20|  200|     250|
 
 ```
 import boto3

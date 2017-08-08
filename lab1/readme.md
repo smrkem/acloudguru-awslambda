@@ -1,4 +1,4 @@
-### Lab 1: Parsing a csv file uploaded to S3
+## Lab 1: Parsing a csv file uploaded to S3
 
 Create a bucket using the cli
 ```
@@ -9,7 +9,7 @@ and upload the sample csv file to it.
 aws s3 cp sample.csv s3://ms-awslambda-lab0
 ```
 
-##### Version 1
+### Version 1
 Next I created a lambda function (python 3) using the console called `awslambda-lab1`.
 Leaving the sample generated code alone - I wrote the `csv_read.py` file:
 ```
@@ -53,7 +53,7 @@ aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name
 ```
 and in the console I can see the new version and create an alias "PROD" which points to it.
 
-##### Version 2
+### Version 2
 Next step is to update the lambda so it outputs the Net revenue totals for the day. The csv looks like:  
 
 |Day       |Customers|Gross|Expenses|
@@ -92,3 +92,28 @@ and rezip and publish the file.
 $ zip -r csv_parse.zip *.py
 $ aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name awslambda-lab1 --publish
 ```
+
+I can see in the console that version 2 is there and is $LATEST. What will happen now if I upload a new csv to s3? I change a couple values in sample3.csv and copy it to my bucket?
+```
+aws s3 cp sample3.csv s3://ms-awslamba-lab0
+```
+Shoot - An error!!
+```
+Traceback (most recent call last):
+File "/var/task/csv_read.py", line 18, in lambda_handler
+total_net += (row["Gross"] - row["Expenses"])
+TypeError: unsupported operand type(s) for -: 'str' and 'str'
+```
+lol - stupid me. An easy fix which I'll upload *without* publishing a new version. Converting the strings to floats:
+```
+for row in csv.DictReader(contents.split()):
+    print(row)
+    total_net += (float(row["Gross"]) - float(row["Expenses"]))
+return "Total Net: ${0}".format(total_net)
+```
+I then save, rezip and reupload - this time without the `--publish` flag.
+```
+$ zip -r csv_parse.zip *.py
+$ aws lambda update-function-code --zip-file=fileb://csv_parse.zip --function-name awslambda-lab1
+```
+and in the returned output I see it's uploaded to $LATEST.

@@ -15,5 +15,5 @@ def lambda_handler(event, context):
     total_net = 0
     for row in csv.DictReader(contents.split()):
         print(row)
-        total_net += (row["Gross"] - row["Expenses"])
+        total_net += (float(row["Gross"]) - float(row["Expenses"]))
     return "Total Net: ${0}".format(total_net)
